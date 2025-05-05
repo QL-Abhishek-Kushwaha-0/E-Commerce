@@ -1,0 +1,10 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+.vs
+/E-Commerce/E-Commerce/bin/Debug/net8.0
+/E-Commerce/E-Commerce/obj
+/E-Commerce/E-Commerce/Logs
+/E-Commerce/E-Commerce/appsettings.Development.json
+/E-Commerce/E-Commerce/Logs20250505

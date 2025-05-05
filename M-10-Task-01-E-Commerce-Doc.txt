@@ -1,0 +1,402 @@
+E-Commerce Web Application Doc
+--------------------------------------
+	-> A Shopping Website where users can buy products as Clothes, Electronics etc.
+	-> Sellers can also list their products which could be bought by Buyers.
+
+	-> Tech-Stack : .NET Core MVC
+------------------------------------------------------------------------------------------------------
+	Contents of Application
+	--------------------------
+		1. Entities
+		2. Authentication
+		3. User Management
+		4. Product Management
+		5. Cart Management
+
+
+-----------------------------------------------------------------------------------------------------------------
+1. Entitites
+------------------
+	-> Project Entities that will be involved in Application will be :
+		1. User
+		--------------
+			* Two types of Users : Buyer and Seller
+			* Buyers -> Can buy the Products
+			* Seller -> Can list their products to sell
+
+			* Fields in User Entity : 
+				- Id
+				- Name
+				- Email
+				- Password
+				- CartId		(For Seller it will be null)
+				- WishlistId	(For Seller it will be null)
+				- UserRole
+				- Phone Number
+				- Addresses
+
+		2. Product
+		----------------
+			* Product will be listed out by the Seller
+			* Can be bought by Customer
+
+			* Fields in Product Entity :
+				- Id
+				- Name
+				- Description
+				- Size
+				- Color
+				- Price
+				- Discount
+				- Seller Id
+
+				- Ratings
+				- Reviews
+
+		3. CartItem
+		-----------------
+			* Will refer to Products that will be added to Cart
+			* Will contain following Fields
+				- Id
+				- ProductId
+				- Quantity
+				- Size
+				- Color
+				- totalMRP (productPrice * Quantity)
+				- totalDiscount (productDiscount * Quantity)
+				- totalPrice (totalMRP - (totalDiscount/100 * totalMRP))
+
+		3. Cart
+		---------------
+			* Each Customer will be assigned a Cart in the Carts Table
+			
+			* Fields in the Carts Table
+				- Id
+				- Customer Id
+				- CartItems -> Array of cartItems Object
+				- totalCartMRP (sum of totalMRP of Each Cart Item)
+				- totalCartDiscount (sum of toaltDiscount of Each Cart Item)
+				- totalCartValue (sum of totalPrice of Each Cart Item)
+
+		4. Order
+		-----------
+			* Will contain the details of Order placed by the Customer
+
+			* Fields in the Order Table
+				- Id
+				- OrderedItems
+				- Address
+				- Phone Number
+				- Name of Person Ordering
+				- Shipping Charges (15 % of cart value if cartValue < 1000 else free) -> (Non-Returnable)
+				- Platform Fee (Rs 20 constant for every order (Non-Refundable))
+				- total orderValue  (sum of totalPrice of each cartItem + Shipping Charges + Platform Fee)
+				- Payment Method
+				- Payment Id
+				- Order Date (Date of Placing the Order)
+
+		5. OrderedItem
+			* Details of Ordered Item
+
+			* Fields in OrderedItem :
+				- Id
+				- cartItem
+				- Order Status (Placed, Shipped, In Transit, Delivered, Cancelled)
+
+----------------------------------------------------------------------------------------------------------------------
+2. Authentication
+-------------------------
+	- For Authentication We will use JWT Token.
+	- Using JWT we will generate two types of tokens :
+		* Access Token
+		* Refresh Token
+
+	1. Register API
+	------------------
+		* Endpoint :  POST  /api/auth/register
+		
+		* Register the user using the follwing details to be send in Request Object
+					{
+						"name": "Random Name",
+						"email": "Random Email",
+						"Phone Number": "9876543210",
+						"Password": "Random Password",
+						"UserRole": "Customer / Seller"
+					}
+
+			* The Password sent in request obj will be hashed using "BCrypt" and then be stored in DB.
+
+		* Send the response as a response Utitlity (ApiResponse with Success Message and User Data Except for password)
+
+	2. Login API
+	-----------------
+		* Endpoint :  POST  /api/auth/login
+
+		* Send a POST request with User Email and Password to the Server
+				{
+					"email": "random@mail.com",
+					"password": "myPassword"
+				}
+
+		* Alternate option will be by sending OTP to registered Phone Number and login through that OTP.
+				{
+					"phone": 9876543210
+				}
+				- User will then enter the OTP sent which will be then verified at backend and if correct user will be logged in
+
+		* Once login Credentials will be verified, we'll generate a JWT Token (Access Token + Refresh Token)
+			- In order to allow the user to access the protected API based on Roles
+
+		* Then send the User Data along with JWT token to the Client Side.
+
+	3. Forgot Password API
+	-------------------------
+		* Endpoint :  POST  /api/auth/forgot-password?Email=my@mail.com
+
+		* In case user forgets his password, he can reset it using this API
+			  - User hits forgot-password which triggers server to search for that email in DB
+			  - If found it sends a mail to the User's Mail with a link to reset the password along with a hash which is then stored in another table along with emailId and a expiry time
+			  - User Clicks the link and a page opens to reset the password
+			  - Then at backend it checks the server for the hash and if found retrieves the email and using it updates the password in the DB
+			  - Now user can log in to his account
+
+
+	4. Logout API
+	-----------------
+		* Endpoint :  POST  /api/auth/logout
+
+		* Removes the User's Access token as well as Refresh Token
+		* Additionally add the access token and refresh token to blacklist as tokens cannot be invalidated till its expiry
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+3. User Management
+----------------------
+	1. User Profile Dashboard API
+	----------------------------------
+		* Endpoint :  GET  /api/users/profile
+
+		* Get the details of the User from DB
+		* Consist basic details of User Information that will be common for both Customer as well as Seller
+
+		* For Customer :
+			- There will be details about his orders placed.
+			- Tracking Information about orders
+			- Payment Methods
+			- Wishlist
+			- Addresses
+
+		* For Seller
+			- There will be information related to orders that needs to be shipped, successfully delivered or returns etc.
+			- Summary of total Sales with filters like monthly or yearly sales.
+			- Inventory Management Options
+				* Adding Products
+				* Increasing Stocks of existing Products
+				* Removing the Product listing
+
+	2. User Profile Deletion API
+	-------------------------------
+		* Endpoint :  DELETE  /api/users/{userId}
+
+		* Delete the User Profile
+		
+		* Deletion of Profile will depend on some factors :
+
+			- For Customers :
+				* No Existing Placed orders or return Orders
+				* There should be no pending payment etc.
+
+			- For Sellers :
+				* If there is any product listed out.
+				* If there is existing order from own products.
+				* Any undelivered or return order from his products.
+
+	3. User Profile Update API
+	-------------------------------
+		* Endpoint :  PUT  /api/users/{userId}
+
+		* Update the Information related to Profile
+
+		* For Customer : 
+			- Addresses
+			- Payment Methods
+			- Phone Number
+			- Name
+
+		* For Seller :
+			- Name
+			- Product Information
+			- Product Prices
+			- Product Stock
+
+----------------------------------------------------------------------------------------------------------------------------------
+4. Product Management
+--------------------------------
+	1. Listing a Product
+	-------------------------
+		* Endpoint :  POST  /api/products
+
+		* Only Seller will be allowed to list the products.
+		* These products then will be available for Customers to buy from.
+
+		* Request will be sent from the client side and request object will contain following details : 
+				{
+					"name": "productName",
+					"description": "productDescription",
+					"size": "product Sizes enum / array",
+					"color": "product Colors enum / array",
+					"price": Product Price (Number),
+					"discount": Discount Percentage (Percentage),
+					"stock": Quantity,
+					"sellerId": "Id of Seller whoc added this product"
+				}
+
+		* Product will be added in the DB and be available for people to place order
+
+		* Response will be Success Message of Product Added Successfully and the product Details
+
+	2. Updating the Product
+	--------------------------
+		* Endpoint :  PUT  /api/products/{productId}
+
+		* Seller will be able to update the details of his own product such as :
+			- Price
+			- Description
+			- Name
+			- Stock
+			- Discount 
+
+		* All these details will be applicable to new orders and no changes will be applied to existing orders
+		
+		* Will Send a PUT request from the Client with fields to be updated and the required changes are applied in DB at the backend
+		* A Success Response will be send to Frontend stating Details have been updated and new details of the product
+
+	3. Deleting the Product Listing
+	----------------------------------
+		* Endpoint :  DELETE  /api/products/{productId}
+
+		* Only the Seller who listed out the product will be allowed to remove the product
+
+		* Some things will be required for listing to be deleted :
+			- Cannot delete the product if there is existing order placed with that item
+			- If deleted it won't be removed from DB but will be marked with :
+					* UserId as null
+					* OUT OF Stock
+
+		* Once product deleted a success response will be sent stating Product removed Successfully
+
+---------------------------------------------------------------------------------------------------------------------------------------------------
+5. Cart Management
+-----------------------
+	1. Add to Cart API
+	----------------------------
+		* Endpoint :  POST  /api/users/cart/{productId}
+
+		* Customers will be able to add a Product Item to its cart
+		* If item has already been added then its count will be increased.
+
+		* At the Client Side User will click on add-to-cart button and the product then will be added to cart
+			{
+				"quantity": Quantity of Product,
+				"size": Select the Size,
+				"color": Choose the Color
+			}
+
+		* At the Backend Side, 
+			- If Customer doesn't have Cart Initialised then it will be initialised by creating an entry to Cart table with CustormerId and an empty list of Products
+			- Then productId will be added to the cartItems list
+
+		* Once added Client will get a message that Product added to Cart Successfully...
+
+	2. Remove From Cart API
+	--------------------------------
+		* Endpoint :  DELETE  /api/users/cart/{productId}
+
+		* Only Cart Owner can remove from the cart
+
+		* Customer will be able to remove an Item from its cart
+		* If Item is more than one then it will be decremented
+
+		* Once removed from cart then client will recieve a messafe as Product removed from cart Successfully...
+
+	3. View Cart API
+	-----------------------------
+		* Endpoint :  GET  /api/users/cart/{userId}
+
+		* Only Cart Owner will be able to view its cart
+
+		* Fetches all the product Items in the cart along with its Quantity
+		* Allows Customer to view the Items in the Cart
+
+		* Provides an option to place the order for the items in the cart
+
+
+	4. Update the Cart API
+	--------------------------
+		* Endpoint :  PUT  /api/users/cart/{userId}
+
+		* Only the Cart Owner will be able to modify his cart
+
+		* Modify the items in the cart
+			- Quantity of Product
+			- Size of the Product
+			- Color of the Product
+
+		* All these field of CartItem can be updated in the Cart
+
+		* Server will response with Success Message of Updated Cart after applying changes to the CartItems
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+6. Order Management
+-------------------------------
+	1. Placing the Order
+	---------------------------
+		* Endpoint :  POST  /api/cart/checkout/{cartId}
+
+		* Owner of the Cart will only be allowed to place the order
+
+		* Cart must contain some Item to place the Order
+
+		* In order to place the Order :
+			- Cart must have Some Items
+			- Address needs to be added or selected from previous saved addresses
+			- Payment Method should be added.
+			- PaymentId in case the order is not Cash On Delivery
+
+		* Status of the Order will be updated Product-wise
+			- The Seller of the Product will be allowed to change status from (Order P;aced -> Shipped -> In Transit -> Delivered)
+			- Order can be cancelled by the Customer or Seller by changing the Status to "Cancelled"
+
+		* Info will be stored in Orders Table with CustomerId and its Order Details
+
+
+	2. View all Orders
+	----------------------------
+		* Endpoint :  GET  /api/orders/{userId}
+
+		* Customer will be able to fetch his own orders
+		* Fetches all Orders that a customer placed
+
+		* All the Order Details along with date of placing that order
+		* Give the list of orders along with all required details and order status
+
+
+	3. Cancel the Order
+	-----------------------
+		* Endpoint :  PATCH  /api/orders/cancel-order/{orderId}
+
+		* Customer who placed the order will be able to cancel it
+
+		* Send a PATCH request and Update the Status of Order to Cancelled
+		
+		* After Cancellation, Update the total cost of Order
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+7. Payment
+-------------------
+	1. Paying for the Order
+	------------------------------
+		* Endpoint :  POST  /api/orders/payment/{orderId}
+
+		* Can Use Rajorpay or any Payment Gateway for implementing Payment functions
