@@ -1,0 +1,34 @@
+Id,Name,CategoryId
+1,T-Shirts,1
+2,Shirts,1
+3,Jeans,1
+4,Trousers,1
+5,Jackets,1
+6,Footwear,1
+7,Accessories,1
+8,Kurtis & Tunics,2
+9,Tops & Tees,2
+10,Sarees,2
+11,Dresses,2
+12,Jeans & Jeggings,2
+13,Footwear,2
+14,Handbags,2
+15,Jewelry,2
+16,Smartphones,3
+17,Laptops,3
+18,Tablets,3
+19,Headphones,3
+20,Smartwatches,3
+21,Cameras,3
+22,Home Appliances,3
+23,Skincare,4
+24,Haircare,4
+25,Makeup,4
+26,Fragrances,4
+27,Personal Care,4
+28,Beauty Tools,4
+29,Suitcases,5
+30,Backpacks,5
+31,Duffel Bags,5
+32,Travel Accessories,5
+33,Kids Wear,6

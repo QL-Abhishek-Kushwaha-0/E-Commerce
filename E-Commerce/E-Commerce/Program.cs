@@ -92,8 +92,19 @@ builder.Services.AddControllers()
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
 var app = builder.Build();
+
+using(var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    context.Database.Migrate();
+
+    await DataSeeder.SeedCategoriesData(context, "Data/SeedData/Categories.csv");
+    await DataSeeder.SeedSubCategoriesData(context, "Data/SeedData/SubCategories.csv");
+}
 
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
