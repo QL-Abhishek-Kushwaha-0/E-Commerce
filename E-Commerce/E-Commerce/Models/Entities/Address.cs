@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace E_Commerce.Models.Entities
 {
@@ -24,12 +25,15 @@ namespace E_Commerce.Models.Entities
         public string State {  get; set; }
 
         [StringLength(50)]
-        public string Country { get; set; } = "India";
+        public string? Country { get; set; } = "India";
 
         [RegularExpression(@"^\d{6}$", ErrorMessage = "Postal Code should be of length = 6")]
         public int PostalCode { get; set; }
 
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public AddressType AddressType { get; set; }
+
+        public bool IsDefault { get; set; }
 
         public Guid UserId { get; set; }
         public User User { get; set; }

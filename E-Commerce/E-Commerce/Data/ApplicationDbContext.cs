@@ -10,12 +10,22 @@ namespace E_Commerce.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Address> Addresses { get; set; }
         public DbSet<Refreshtoken> RefreshTokens { get; set; }
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<SubCategory> SubCategories { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Refreshtoken>()
-                .HasKey(rt => rt.RefreshToken);
+                .HasOne(rt => rt.User)
+                .WithMany()
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Address>()
+                .HasOne(u => u.User)
+                .WithMany(ad => ad.UserAddresses)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
